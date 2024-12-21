@@ -1,28 +1,31 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { BeforeInsert, Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
 
 @Entity()
 export class Product {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column('text', {
-    // unique: true, No se porque no funciona
+  //  FORMA DIFERENTE DE DECLAR EN TYPEORM
+  @Column({
+    type: 'varchar',
+    unique: true, //No se porque no funciona
+    length: 150,
   })
   title: string;
 
-  @Column('numeric', {
+  @Column('float', {
     default: 0,
   })
   price: number;
 
   @Column({
-    type: 'text',
+    type: 'varchar',
     nullable: true,
   })
   description: string;
 
   @Column(
-    'text',
+    'varchar',
     // { unique: true }
   )
   slug: string;
@@ -33,7 +36,7 @@ export class Product {
   stock: number;
 
   // ESTO DEBERIA TENER RELACION CON OTRA TABLA
-  @Column('text', {
+  @Column('varchar', {
     // array: true,
   })
   size: string;
@@ -43,4 +46,16 @@ export class Product {
 
   //tags
   //images
+
+  @BeforeInsert()
+  checkSlugInsert() {
+    if (!this.slug) {
+      this.slug = this.title;
+    }
+
+    this.slug = this.slug
+      .toLowerCase()
+      .replaceAll(' ', '_')
+      .replaceAll("'", '');
+  }
 }
