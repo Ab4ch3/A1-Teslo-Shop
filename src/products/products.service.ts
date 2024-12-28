@@ -7,6 +7,8 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { validate as isUUID } from 'uuid';
+import { PaginationDto } from '../common/dto/pagination.dto';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { Product } from './entities/product.entity';
@@ -29,20 +31,53 @@ export class ProductsService {
     }
   }
 
-  async findAll() {
-    return await this.productRepository.find({});
+  async findAll(pagination: PaginationDto) {
+    const { limit = 10, offset = 0 } = pagination;
+
+    return await this.productRepository.find({
+      take: limit,
+      skip: offset,
+      //TODO :: RELACIONES
+    });
   }
 
-  async findOne(id: string) {
-    const Product = await this.productRepository.findOneBy({ id });
+  async findOne(term: string) {
+    let product: Product;
 
-    if (!Product) throw new NotFoundException(`Product #${id} not found`);
+    if (isUUID(term)) {
+      product = await this.productRepository.findOneBy({ id: term });
+    } else {
+      const queryBuilder = this.productRepository.createQueryBuilder();
+      //le estas especifando valor que luego se le pasaran , esto es una medida contra slq injection
+      product = await queryBuilder
+        .where(`UPPER(title) =:title or slug =:slug`, {
+          title: term.toUpperCase(),
+          slug: term.toLowerCase(),
+        })
+        .getOne();
+    }
 
-    return Product;
+    if (!product) throw new NotFoundException(`Product #${term} not found`);
+
+    return product;
   }
 
-  update(id: number, updateProductDto: UpdateProductDto) {
-    return `This action updates a #${id} product`;
+  async update(id: string, updateProductDto: UpdateProductDto) {
+    // preload , buscar el producto y q cargue todas las que estan definidas en la data.
+    const product = await this.productRepository.preload({
+      id: id,
+      ...updateProductDto,
+    });
+
+    if (!product) throw new NotFoundException(`Product #${id} not found`);
+
+    try {
+      await this.productRepository.save(product);
+
+      return product;
+    } catch (e) {
+      this.handleDBExceptions(e);
+    }
   }
 
   async remove(id: string) {

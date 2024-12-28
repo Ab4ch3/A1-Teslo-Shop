@@ -1,4 +1,10 @@
-import { BeforeInsert, Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  BeforeInsert,
+  BeforeUpdate,
+  Column,
+  Entity,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 
 @Entity()
 export class Product {
@@ -8,7 +14,7 @@ export class Product {
   //  FORMA DIFERENTE DE DECLAR EN TYPEORM
   @Column({
     type: 'varchar',
-    unique: true, //No se porque no funciona
+    unique: true,
     length: 150,
   })
   title: string;
@@ -39,12 +45,17 @@ export class Product {
   @Column('varchar', {
     // array: true,
   })
-  size: string;
+  sizes: string;
 
   @Column()
   gender: string;
 
-  //tags
+  @Column({
+    type: 'varchar',
+    // array: true,
+    default: '',
+  })
+  tags: string;
   //images
 
   @BeforeInsert()
@@ -53,6 +64,14 @@ export class Product {
       this.slug = this.title;
     }
 
+    this.slug = this.slug
+      .toLowerCase()
+      .replaceAll(' ', '_')
+      .replaceAll("'", '');
+  }
+
+  @BeforeUpdate()
+  checkSlugUpdate() {
     this.slug = this.slug
       .toLowerCase()
       .replaceAll(' ', '_')

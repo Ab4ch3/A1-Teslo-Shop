@@ -32,8 +32,12 @@ export class CreateProductDto {
   stock?: number;
 
   @IsString()
-  size: string;
+  sizes: string;
 
   @IsIn(['men', 'women', 'kid', 'unisex'])
   gender: string;
+
+  @IsString()
+  @IsOptional()
+  tags: string;
 }
